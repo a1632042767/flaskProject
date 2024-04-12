@@ -86,6 +86,37 @@ def searchDocByName():
     return docData
 
 
+def loginBaidu():
+    chrome_options = Options()
+    # chrome_options.add_argument("--headless")  # 运行在无头模式
+    # chrome_options.add_argument("--disable-gpu")  # 适用于Windows系统
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.set_page_load_timeout(10)
+
+    user_id = session["user_id"]
+    userInfo: UserInfoByBaidu = UserInfoByBaidu.query.get(user_id)
+    if userInfo:
+        username = userInfo.username
+        password = userInfo.password
+        try:
+            driver.get("https://wenku.baidu.com")
+            loginButton = (By.CLASS_NAME, 'user-text')
+            WebDriverWait(driver, 5).until(expected_conditions.presence_of_element_located(loginButton))
+            driver.find_element(By.CLASS_NAME, 'user-text').click()
+            usernameInput = (By.ID, 'TANGRAM__PSP_11__userName')
+            WebDriverWait(driver, 5).until(expected_conditions.presence_of_element_located(usernameInput))
+            driver.find_element(By.ID, 'TANGRAM__PSP_11__userName').send_keys(username)
+            driver.find_element(By.ID, 'TANGRAM__PSP_11__password').send_keys(password)
+            driver.find_element(By.ID, 'TANGRAM__PSP_11__isAgree').click()
+            driver.find_element(By.ID, 'TANGRAM__PSP_11__submit').send_keys(Keys.RETURN)
+            time.sleep(1)
+
+        except TimeoutException:
+            return jsonify({
+                "status": "false",
+                "message": "百度文库网站加载时间过长"
+            })
+
 # 百度文库
 @login_required
 @bp.route("/bdwk", methods=['GET', 'POST'])
@@ -106,7 +137,7 @@ def downloadDocInBaidu():
             password = userInfo.password
             try:
                 driver.get(docPath)
-                time.sleep(2)
+                time.sleep(1)
                 userIcon = driver.find_element(By.CLASS_NAME, 'user-icon')
 
                 if not userIcon:
@@ -121,6 +152,10 @@ def downloadDocInBaidu():
                     time.sleep(1)
 
                     if userIcon:
+                        cookies = driver.get_cookies()
+                        for cookie in cookies:
+                            cookie = cookie.strip()
+                            cookie_name, cookie_value = cookie.split("=", maxsplit=1)
                         try:
                             guanggao = driver.find_element(By.XPATH, '//*[@id="app"]/div[3]/div/div[2]/div[2]/div[5]')
                             guanggao.click()
