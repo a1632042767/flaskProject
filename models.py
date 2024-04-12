@@ -28,6 +28,12 @@ class UserInfoByBaidu(db.Model):
     username = db.Column(db.String(255), nullable=False)
     password = db.Column(db.String(255), nullable=False)
 
+
+class BaiduCookie(db.Model):
+    __tablename__ = 'baiducookie'
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id), primary_key=True, nullable=False)
+    cookies = db.Column(db.Text, nullable=False)
+
 # flask db init: 只需要执行一次
 # flask db migrate: 将orm模型生成迁移脚本
 # flask db upgrade: 将迁移脚本映射到数据库
