@@ -1,7 +1,7 @@
 import os
 from urllib.parse import quote
 
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, g
 from selenium import webdriver
 from selenium.webdriver import ChromeOptions
 from selenium.webdriver.common.by import By
@@ -18,13 +18,12 @@ from selenium.webdriver.support import expected_conditions
 
 from extension import db
 import time
-import requests
 
-# TODO 2024 4.12 目前所缺功能：用户查询和设置百度账密，用户设置cookie，整个豆丁模块；
+# TODO 2024 4.12 整个豆丁模块
 
 # 爬虫下载文库
 
-bp = Blueprint("sele", __name__, url_prefix="/")
+bp = Blueprint("seleBaidu", __name__, url_prefix="/bd")
 
 
 def getDataByBaidu(path):
@@ -83,8 +82,8 @@ def getDataByBaidu(path):
 
 
 # 根据关键词查找
-# @login_required
 @bp.route("/search", methods=['GET', ])
+@login_required
 def searchDocByName():
     searchDoc = request.args.get("searchDoc")
     searchDoc_encode = quote(searchDoc)
@@ -106,7 +105,7 @@ def loginBaidu():
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(10)
 
-    user_id = session["user_id"]
+    user_id = g.user.id
     userInfo: UserInfoByBaidu = UserInfoByBaidu.query.get(user_id)
     user: User = User.query.get(user_id)
     if userInfo:
@@ -196,11 +195,13 @@ def loginBaidu():
 
 
 # 百度文库
-@login_required
 @bp.route("/bdwk", methods=['POST', ])
+@login_required
 def downloadDocInBaidu():
-    # TODO 写个功能让用户自己先设置下载路径
-    download_dir = r"D:\Documents"
+    user_id = g.user.id
+    user: User = User.query.get(user_id)
+    # download_dir = r"C:\\"
+    download_dir = user.downloadpath
     chrome_options = ChromeOptions()
     # chrome_options.add_argument("--headless")  # 运行在无头模式
     # chrome_options.add_argument("--disable-gpu")  # 适用于Windows系统
@@ -225,7 +226,7 @@ def downloadDocInBaidu():
         print("请求网站成功")
         # time.sleep(1)
 
-        user_id = session["user_id"]
+        user_id = g.user.id
 
         baiduCookie: BaiduCookie = BaiduCookie.query.get(user_id)
 
@@ -238,6 +239,19 @@ def downloadDocInBaidu():
 
             driver.refresh()
             print("网站刷新成功")
+            userIcon = driver.find_element(By.CLASS_NAME, 'user-icon')
+            if not userIcon:
+                response = loginBaidu()
+                try:
+                    responseData = response.get_json()
+                    return responseData
+                except Exception as e:
+                    print(e)
+                    for cookie in response:
+                        driver.add_cookie(cookie)
+
+                driver.refresh()
+
         else:
             response = loginBaidu()
             try:
@@ -260,7 +274,8 @@ def downloadDocInBaidu():
         WebDriverWait(driver, 5).until(expected_conditions.element_to_be_clickable(downloadButton))
 
         try:
-            driver.find_element(By.XPATH, '//*[@id="app"]/div[2]/div[1]/div[2]/div[3]/div/div[1]/div/div[2]/div[2]').click()
+            driver.find_element(By.XPATH,
+                                '//*[@id="app"]/div[2]/div[1]/div[2]/div[3]/div/div[1]/div/div[2]/div[2]').click()
 
             time.sleep(5)
 
@@ -301,18 +316,4 @@ def downloadDocInBaidu():
             "status": "false",
             "message": "网页加载时间过长"
         })
-
-# 豆丁
-# @login_required
-# @bp.route("/bdwk", methods=['GET', ])
-# def downloadDocInDouding():
-#     chrome_options = Options()
-#     # chrome_options.add_argument("--headless")  # 运行在无头模式
-#     # chrome_options.add_argument("--disable-gpu")  # 适用于Windows系统
-#     driver = Chrome(options=chrome_options)
-#     driver.set_page_load_timeout(10)
-#
-#     docPath = request.get_json().get("docPath")
-#     driver.get(docPath)
-#     driver.find_element(By.CLASS_NAME, "doc_down_btn").click()
 
