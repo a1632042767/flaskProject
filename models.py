@@ -42,7 +42,7 @@ class UserInfoDouding(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), primary_key=True, nullable=False)
     username = db.Column(db.String(255), nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    cookies = db.Column(db.Text, nullable=False)
+    cookies = db.Column(db.Text)
 
 # flask db init: 只需要执行一次
 # flask db migrate: 将orm模型生成迁移脚本

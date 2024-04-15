@@ -1,5 +1,4 @@
 import os
-from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, g
 from selenium import webdriver
@@ -19,7 +18,6 @@ from selenium.webdriver.support import expected_conditions
 from extension import db
 import time
 
-# TODO 2024 4.12 整个豆丁模块
 
 # 爬虫下载文库
 
@@ -81,23 +79,6 @@ def getDataByBaidu(path):
     return jsonify(docsData)
 
 
-# 根据关键词查找
-@bp.route("/search", methods=['GET', ])
-@login_required
-def searchDocByName():
-    searchDoc = request.args.get("searchDoc")
-    searchDoc_encode = quote(searchDoc)
-    searchUrl = f'https://wenku.baidu.com/search?word={searchDoc_encode}'
-    docData = getDataByBaidu(searchUrl)
-    if docData:
-        return docData
-    else:
-        return jsonify({
-            "status": "false",
-            "message": "请求失败"
-        })
-
-
 def loginBaidu():
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # 运行在无头模式
@@ -141,7 +122,6 @@ def loginBaidu():
                 })
 
             userIcon = driver.find_element(By.CLASS_NAME, 'user-icon')
-
             if userIcon:
                 cookies = driver.get_cookies()
 
@@ -226,8 +206,6 @@ def downloadDocInBaidu():
         print("请求网站成功")
         # time.sleep(1)
 
-        user_id = g.user.id
-
         baiduCookie: BaiduCookie = BaiduCookie.query.get(user_id)
 
         if baiduCookie:
@@ -285,6 +263,7 @@ def downloadDocInBaidu():
             # 获取网站源码
 
             page_source = driver.page_source
+
             if "联合会员" in page_source:
                 driver.quit()
                 return jsonify({
