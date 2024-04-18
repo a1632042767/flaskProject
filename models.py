@@ -11,7 +11,7 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True)
     join_time = db.Column(db.DateTime, default=datetime.now)
-    downloadpath = db.Column(db.String(50))
+    downloadpath = db.Column(db.String(50), default=r"C:\\")
 
 
 class EmailCode(db.Model):
@@ -28,12 +28,7 @@ class UserInfoByBaidu(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), primary_key=True, nullable=False)
     username = db.Column(db.String(255), nullable=False)
     password = db.Column(db.String(255), nullable=False)
-
-
-class BaiduCookie(db.Model):
-    __tablename__ = 'baiducookie'
-    user_id = db.Column(db.Integer, db.ForeignKey(User.id), primary_key=True, nullable=False)
-    cookies = db.Column(db.Text, nullable=False)
+    cookies = db.Column(db.Text)
 
 
 class UserInfoDouding(db.Model):

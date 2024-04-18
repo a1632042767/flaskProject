@@ -1,9 +1,10 @@
-from flask import Blueprint, jsonify, redirect, request, url_for, session
+from flask import Blueprint, jsonify, request, session
 from extension import mail, db
 from flask_mail import Message
 from models import EmailCode
 import random
 import string
+import data
 from .forms import RegisterForm, LoginForm
 from models import User
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -63,10 +64,19 @@ def login():
         return jsonify({'status': 'false', 'message': errors})
 
 
-@bp.route("/logout")
+@bp.route("/logout", methods=['GET', ])
 def logout():
-    session.clear()
-    return redirect("/")
+    try:
+        session.clear()
+        return jsonify({
+            "status": "success",
+            "message": "退出成功"
+        })
+    except Exception:
+        return jsonify({
+            "status": "false",
+            "message": "退出失败"
+        })
 
 
 @bp.route("/register", methods=['GET', 'POST'])

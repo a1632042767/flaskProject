@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, g
 from selenium import webdriver
@@ -9,7 +10,7 @@ from selenium.webdriver.chrome.options import Options
 from sqlalchemy.exc import IntegrityError
 
 from decorators import login_required
-from models import UserInfoByBaidu, BaiduCookie, User
+from models import UserInfoByBaidu, User
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementNotInteractableException, \
     ElementClickInterceptedException
 from selenium.webdriver.support.ui import WebDriverWait
@@ -24,7 +25,12 @@ import time
 bp = Blueprint("seleBaidu", __name__, url_prefix="/bd")
 
 
-def getDataByBaidu(path):
+@bp.route("/search", methods=['GET', ])
+# @login_required
+def getDataByBaidu():
+    searchDoc = request.args.get("searchDoc")
+    searchDoc_encode = quote(searchDoc)
+    path = f'https://wenku.baidu.com/search?word={searchDoc_encode}'
     print("请求getDate")
     chrome_options = Options()
     chrome_options.add_experimental_option("prefs", {
@@ -45,8 +51,6 @@ def getDataByBaidu(path):
         time.sleep(0.5)
         driver_chrome.refresh()
         docs = driver_chrome.find_elements(By.CSS_SELECTOR, '.list-item.doc-item-tile.layout-column')
-        # titles = driver.find_elements(By.CLASS_NAME, 'tile-title')
-        # contents = driver.find_elements(By.CLASS_NAME, 'tile-content')
 
         for doc in docs:
             docData = []
@@ -75,17 +79,26 @@ def getDataByBaidu(path):
             "message": "访问网站超时"
         })
 
+    print("爬取完成")
+    # print(docsData[0][1])
     driver_chrome.quit()
-    return jsonify(docsData)
+    return jsonify({
+        "status": "success",
+        "message": "请求成功",
+        "docsData": docsData
+    })
 
 
+@bp.route("/loginbd", methods=['POST', ])
 def loginBaidu():
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # 运行在无头模式
+    chrome_options.add_argument("--disable-images")  # 禁止图片加载
     chrome_options.add_argument("--disable-gpu")  # 适用于Windows系统
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(10)
-
+    print("配置驱动完成")
+    "goToVerify"
     user_id = g.user.id
     userInfo: UserInfoByBaidu = UserInfoByBaidu.query.get(user_id)
     user: User = User.query.get(user_id)
@@ -113,7 +126,7 @@ def loginBaidu():
             driver.find_element(By.ID, 'TANGRAM__PSP_11__password').send_keys(password)
             driver.find_element(By.ID, 'TANGRAM__PSP_11__isAgree').click()
             driver.find_element(By.ID, 'TANGRAM__PSP_11__submit').send_keys(Keys.RETURN)
-            time.sleep(1)
+            time.sleep(100)
             goToVerify = driver.find_element(By.ID, 'goToVerify')
             if goToVerify:
                 return jsonify({
@@ -132,11 +145,8 @@ def loginBaidu():
                     cookie_value = cookie['value']
                     cookie_str += f"{cookie_name}={cookie_value}; "
 
-                baiduCookie = BaiduCookie()
-                baiduCookie.user = user
-                baiduCookie.cookies = cookie_str
+                userInfo.cookies = cookie_str
                 try:
-                    db.session.add(baiduCookie)
                     db.session.commit()
                 except IntegrityError:
                     db.session.rollback()
@@ -197,7 +207,19 @@ def downloadDocInBaidu():
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(10)
 
-    docPath = request.get_json().get("docPath")
+    try:
+        docPath = request.get_json().get("docPath")
+        if not docPath:
+            return jsonify({
+                "status": "false",
+                "message": "文档地址为空"
+            })
+
+    except Exception:
+        return jsonify({
+            "status": "false",
+            "message": "接收文档地址错误"
+        })
 
     try:
         initial_files = os.listdir(download_dir)
@@ -206,10 +228,11 @@ def downloadDocInBaidu():
         print("请求网站成功")
         # time.sleep(1)
 
-        baiduCookie: BaiduCookie = BaiduCookie.query.get(user_id)
+        userInfo: UserInfoByBaidu = UserInfoByBaidu.query.get(user_id)
 
-        if baiduCookie:
-            cookies = baiduCookie.cookies.split(";")
+        if userInfo.cookies:
+            cookies = userInfo.cookies.split(";")
+            # 将字符串转换为字典格式
             for cookie in cookies:
                 cookie = cookie.strip()
                 cookie_name, cookie_value = cookie.split("=", maxsplit=1)
@@ -218,6 +241,7 @@ def downloadDocInBaidu():
             driver.refresh()
             print("网站刷新成功")
             userIcon = driver.find_element(By.CLASS_NAME, 'user-icon')
+
             if not userIcon:
                 response = loginBaidu()
                 try:
@@ -255,7 +279,12 @@ def downloadDocInBaidu():
             driver.find_element(By.XPATH,
                                 '//*[@id="app"]/div[2]/div[1]/div[2]/div[3]/div/div[1]/div/div[2]/div[2]').click()
 
-            time.sleep(5)
+            downloadButton2 = (By.CSS_SELECTOR, '.btn-download.btn-1.btn-.had-doc')
+            WebDriverWait(driver, 5).until(expected_conditions.element_to_be_clickable(downloadButton2))
+
+            driver.find_element(By.CSS_SELECTOR, '.btn-download.btn-1.btn-.had-doc').click()
+
+            time.sleep(3)
 
             final_files = os.listdir(download_dir)
             new_files = set(final_files) - set(initial_files)
@@ -274,7 +303,7 @@ def downloadDocInBaidu():
                 if new_files:
                     driver.quit()
                     return jsonify({
-                        "status": "true",
+                        "status": "success",
                         "message": f"下载成功, 已下载到默认下载目录{download_dir}"
                     })
                 else:

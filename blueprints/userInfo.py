@@ -2,7 +2,7 @@ import os
 
 from flask import Blueprint, g, request, jsonify
 from extension import db
-from models import UserInfoByBaidu, BaiduCookie, User
+from models import UserInfoByBaidu, User, UserInfoDouding
 from decorators import login_required
 from sqlalchemy.exc import IntegrityError
 
@@ -61,6 +61,7 @@ def setUserInfoBaidu():
     userInfo: UserInfoByBaidu = UserInfoByBaidu.query.get(user_id)
     username = request.get_json().get("username")
     password = request.get_json().get("password")
+    cookies = request.get_json().get("cookies")
     if not username:
         return jsonify({
             "status": "false",
@@ -74,9 +75,11 @@ def setUserInfoBaidu():
     if userInfo:
         userInfo.username = username
         userInfo.password = password
-
+        if cookies:
+            userInfo.cookies = cookies
         try:
             db.session.commit()
+
             return jsonify({
                 "status": "success",
                 "message": "更新百度账密成功"
@@ -92,19 +95,20 @@ def setUserInfoBaidu():
     newUserInfo.user = user
     newUserInfo.username = username
     newUserInfo.password = password
-
+    if cookies:
+        newUserInfo.cookies = cookies
     try:
         db.session.add(newUserInfo)
         db.session.commit()
         return jsonify({
             "status": "success",
-            "message": "添加cookie成功"
+            "message": "添加数据成功"
         })
     except IntegrityError:
         db.session.rollback()
         return jsonify({
             "status": "false",
-            "message": "添加cookie失败"
+            "message": "添加数据失败"
         })
 
 
@@ -118,7 +122,8 @@ def getUserInfoBaidu():
     if userInfo:
         user_json = {
             "username": userInfo.username,
-            "password": userInfo.password
+            "password": userInfo.password,
+            "cookie": userInfo.cookies
         }
 
         response_json = {
@@ -133,47 +138,66 @@ def getUserInfoBaidu():
             "status": "success",
             "message": "查询成功"
         }
-        return response_json
+        return jsonify(response_json)
 
 
-@bp.route("/setCookie", methods=['POST'])
-@login_required
-def setCookieBaidu():
+def setUserInfoDouding():
     user_id = g.user.id
     user: User = User.query.get(user_id)
-    baiduCookie: BaiduCookie = BaiduCookie.query.get(user_id)
-    cookie = request.get_json().get("cookie")
+    userInfo: UserInfoDouding = UserInfoDouding.query.get(user_id)
+    cookies = request.get_json().get("cookies")
+    username = request.get_json().get("username")
+    password = request.get_json().get("password")
 
-    if baiduCookie:
-        baiduCookie.cookies = cookie
+    if not username:
+        return jsonify({
+            "status": "false",
+            "message": "用户名不能为空"
+        })
+    if not password:
+        return jsonify({
+            "status": "false",
+            "message": "密码不能为空"
+        })
+
+    newUserInfo = UserInfoDouding()
+
+    if userInfo:
+        userInfo.username = username
+        userInfo.password = password
+
+        if cookies:
+            userInfo.cookies = cookies
+
         try:
             db.session.commit()
-
             return jsonify({
                 "status": "success",
-                "message": "更新cookie成功"
+                "message": "更新豆丁账密成功"
             })
         except IntegrityError:
             db.session.rollback()
             return jsonify({
                 "status": "false",
-                "message": "更新cookie失败"
+                "message": "更新豆丁账密失败"
             })
 
-    newBaiduCookie = BaiduCookie()
-    newBaiduCookie.user = user
-    newBaiduCookie.cookies = cookie
-
+    newUserInfo.user = user
+    newUserInfo.username = username
+    newUserInfo.password = password
+    if cookies:
+        newUserInfo.cookies = cookies
     try:
-        db.session.add(newBaiduCookie)
+        db.session.add(newUserInfo)
         db.session.commit()
+
         return jsonify({
             "status": "success",
-            "message": "添加cookie成功"
+            "message": "添加数据成功"
         })
     except IntegrityError:
         db.session.rollback()
         return jsonify({
             "status": "false",
-            "message": "添加cookie失败"
+            "message": "添加数据失败"
         })

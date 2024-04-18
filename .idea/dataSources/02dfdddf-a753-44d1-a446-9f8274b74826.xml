@@ -903,34 +903,39 @@ BACKUP_ADMIN,BINLOG_ADMIN,CONNECTION_ADMIN,ENCRYPTION_KEY_ADMIN,GROUP_REPLICATIO
 </ObjectGrants>
     </user>
     <table id="282" parent="2" name="alembic_version"/>
-    <table id="283" parent="2" name="baiducookie"/>
-    <table id="284" parent="2" name="emailcode"/>
-    <table id="285" parent="2" name="user"/>
-    <table id="286" parent="2" name="userinfobybaidu"/>
-    <table id="287" parent="2" name="userinfobydouding"/>
-    <column id="288" parent="282" name="version_num">
+    <table id="283" parent="2" name="emailcode"/>
+    <table id="284" parent="2" name="user"/>
+    <table id="285" parent="2" name="userinfobybaidu"/>
+    <table id="286" parent="2" name="userinfobydouding"/>
+    <column id="287" parent="282" name="version_num">
       <Position>1</Position>
       <DataType>varchar(32)|0s</DataType>
       <NotNull>1</NotNull>
     </column>
-    <key id="289" parent="282" name="PRIMARY">
+    <key id="288" parent="282" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <ColNames>version_num</ColNames>
       <Primary>1</Primary>
     </key>
-    <column id="290" parent="283" name="user_id">
+    <column id="289" parent="283" name="id">
       <Position>1</Position>
       <DataType>int(11)|0s</DataType>
       <NotNull>1</NotNull>
+      <SequenceIdentity>null</SequenceIdentity>
     </column>
-    <column id="291" parent="283" name="cookies">
+    <column id="290" parent="283" name="email">
       <Position>2</Position>
-      <DataType>text|0s</DataType>
+      <DataType>varchar(255)|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="291" parent="283" name="code">
+      <Position>3</Position>
+      <DataType>varchar(100)|0s</DataType>
       <NotNull>1</NotNull>
     </column>
     <key id="292" parent="283" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
-      <ColNames>user_id</ColNames>
+      <ColNames>id</ColNames>
       <Primary>1</Primary>
     </key>
     <column id="293" parent="284" name="id">
@@ -939,63 +944,62 @@ BACKUP_ADMIN,BINLOG_ADMIN,CONNECTION_ADMIN,ENCRYPTION_KEY_ADMIN,GROUP_REPLICATIO
       <NotNull>1</NotNull>
       <SequenceIdentity>null</SequenceIdentity>
     </column>
-    <column id="294" parent="284" name="email">
+    <column id="294" parent="284" name="username">
       <Position>2</Position>
       <DataType>varchar(255)|0s</DataType>
       <NotNull>1</NotNull>
     </column>
-    <column id="295" parent="284" name="code">
-      <Position>3</Position>
-      <DataType>varchar(100)|0s</DataType>
-      <NotNull>1</NotNull>
-    </column>
-    <key id="296" parent="284" name="PRIMARY">
-      <NameSurrogate>1</NameSurrogate>
-      <ColNames>id</ColNames>
-      <Primary>1</Primary>
-    </key>
-    <column id="297" parent="285" name="id">
-      <Position>1</Position>
-      <DataType>int(11)|0s</DataType>
-      <NotNull>1</NotNull>
-      <SequenceIdentity>null</SequenceIdentity>
-    </column>
-    <column id="298" parent="285" name="username">
-      <Position>2</Position>
-      <DataType>varchar(255)|0s</DataType>
-      <NotNull>1</NotNull>
-    </column>
-    <column id="299" parent="285" name="password">
+    <column id="295" parent="284" name="password">
       <Position>3</Position>
       <DataType>varchar(255)|0s</DataType>
       <NotNull>1</NotNull>
     </column>
-    <column id="300" parent="285" name="email">
+    <column id="296" parent="284" name="email">
       <Position>4</Position>
       <DataType>varchar(255)|0s</DataType>
       <NotNull>1</NotNull>
     </column>
-    <column id="301" parent="285" name="join_time">
+    <column id="297" parent="284" name="join_time">
       <Position>5</Position>
       <DataType>datetime|0s</DataType>
     </column>
-    <column id="302" parent="285" name="downloadpath">
+    <column id="298" parent="284" name="downloadpath">
       <Position>6</Position>
       <DataType>varchar(50)|0s</DataType>
     </column>
-    <index id="303" parent="285" name="email">
+    <index id="299" parent="284" name="email">
       <ColNames>email</ColNames>
       <Unique>1</Unique>
       <Type>btree</Type>
     </index>
-    <key id="304" parent="285" name="PRIMARY">
+    <key id="300" parent="284" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <ColNames>id</ColNames>
       <Primary>1</Primary>
     </key>
-    <key id="305" parent="285" name="email">
+    <key id="301" parent="284" name="email">
       <ColNames>email</ColNames>
       <UnderlyingIndexName>email</UnderlyingIndexName>
+    </key>
+    <column id="302" parent="285" name="user_id">
+      <Position>1</Position>
+      <DataType>int(11)|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="303" parent="285" name="username">
+      <Position>2</Position>
+      <DataType>varchar(255)|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="304" parent="285" name="password">
+      <Position>3</Position>
+      <DataType>varchar(255)|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <key id="305" parent="285" name="PRIMARY">
+      <NameSurrogate>1</NameSurrogate>
+      <ColNames>user_id</ColNames>
+      <Primary>1</Primary>
     </key>
     <column id="306" parent="286" name="user_id">
       <Position>1</Position>
@@ -1012,32 +1016,11 @@ BACKUP_ADMIN,BINLOG_ADMIN,CONNECTION_ADMIN,ENCRYPTION_KEY_ADMIN,GROUP_REPLICATIO
       <DataType>varchar(255)|0s</DataType>
       <NotNull>1</NotNull>
     </column>
-    <key id="309" parent="286" name="PRIMARY">
-      <NameSurrogate>1</NameSurrogate>
-      <ColNames>user_id</ColNames>
-      <Primary>1</Primary>
-    </key>
-    <column id="310" parent="287" name="user_id">
-      <Position>1</Position>
-      <DataType>int(11)|0s</DataType>
-      <NotNull>1</NotNull>
-    </column>
-    <column id="311" parent="287" name="username">
-      <Position>2</Position>
-      <DataType>varchar(255)|0s</DataType>
-      <NotNull>1</NotNull>
-    </column>
-    <column id="312" parent="287" name="password">
-      <Position>3</Position>
-      <DataType>varchar(255)|0s</DataType>
-      <NotNull>1</NotNull>
-    </column>
-    <column id="313" parent="287" name="cookies">
+    <column id="309" parent="286" name="cookies">
       <Position>4</Position>
       <DataType>text|0s</DataType>
-      <NotNull>1</NotNull>
     </column>
-    <key id="314" parent="287" name="PRIMARY">
+    <key id="310" parent="286" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <ColNames>user_id</ColNames>
       <Primary>1</Primary>
