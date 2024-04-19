@@ -81,6 +81,7 @@ def getDataByDouding():
             try:
                 link = re.findall(findLink, doc)[0]
                 if link:
+                    link = f"https://www.docin.com{link}"
                     data.append(link)
                 title = re.findall(findTitle, doc)[0]
                 if title:
@@ -90,6 +91,8 @@ def getDataByDouding():
                 pass
 
             docsData.append(data)
+
+        # print(docsData)
 
         return jsonify({
             "status": "success",

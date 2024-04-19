@@ -5,6 +5,7 @@ from flask import Blueprint, g, request, jsonify
 from extension import db
 from models import UserInfoByBaidu, User, UserInfoDouding
 from decorators import login_required
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
 
 
@@ -17,6 +18,36 @@ def check_path(path):
         return True
     else:
         return False
+
+
+@bp.route("/updatePassword", methods=['POST', ])
+def updatePassword():
+    user_id = g.user.id
+    user: User = User.query.get(user_id)
+    oldPassword = request.get_json().get("old")
+    newPassword = request.get_json().get("new")
+    newPassword1 = request.get_json().get("new1")
+
+    if newPassword != newPassword1:
+        return jsonify({
+            "status": "false",
+            "message": "两次密码不一致！"
+        })
+
+    if check_password_hash(user.password, oldPassword):
+        user.password = generate_password_hash(newPassword)
+        try:
+            db.session.commit()
+            return jsonify({
+                "status": "success",
+                "message": "更改密码成功"
+            })
+        except IntegrityError:
+            db.session.rollback()
+            return jsonify({
+                "status": "false",
+                "message": "更改密码失败"
+            })
 
 
 @bp.route("/getUserInfo", methods=['GET'])
