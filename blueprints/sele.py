@@ -279,10 +279,14 @@ def downloadDocInBaidu():
             driver.find_element(By.XPATH,
                                 '//*[@id="app"]/div[2]/div[1]/div[2]/div[3]/div/div[1]/div/div[2]/div[2]').click()
 
-            downloadButton2 = (By.CSS_SELECTOR, '.btn-download.btn-1.btn-.had-doc')
-            WebDriverWait(driver, 5).until(expected_conditions.element_to_be_clickable(downloadButton2))
-
-            driver.find_element(By.CSS_SELECTOR, '.btn-download.btn-1.btn-.had-doc').click()
+            try:
+                driver.find_element(By.CSS_SELECTOR, '.btn-download.btn-1.btn-.had-doc').click()
+                # downloadButton2 = (By.CSS_SELECTOR, '.btn-download.btn-1.btn-.had-doc')
+                # WebDriverWait(driver, 5).until(expected_conditions.element_to_be_clickable(downloadButton2))
+            except ElementClickInterceptedException:
+                pass
+            except ElementNotInteractableException:
+                pass
 
             time.sleep(3)
 

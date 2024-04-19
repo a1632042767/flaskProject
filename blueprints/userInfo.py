@@ -1,6 +1,7 @@
 import os
 
 from flask import Blueprint, g, request, jsonify
+
 from extension import db
 from models import UserInfoByBaidu, User, UserInfoDouding
 from decorators import login_required
@@ -18,31 +19,74 @@ def check_path(path):
         return False
 
 
-@bp.route("/setpath", methods=['POST'])
+@bp.route("/getUserInfo", methods=['GET'])
 @login_required
-def setDownloadPath():
+def getUserInfo():
+    user_id = g.user.id
+    user: User = User.query.get(user_id)
+    userInfoBd: UserInfoByBaidu = UserInfoByBaidu.query.get(user_id)
+    userInfoDd: UserInfoDouding = UserInfoDouding.query.get(user_id)
+
+    user_info = {
+        "downloadPath": user.downloadpath,
+        "usernameBd": getattr(userInfoBd, 'username', None),
+        "passwordBd": getattr(userInfoBd, 'password', None),
+        "cookiesBd": getattr(userInfoBd, 'cookies', None),
+        "usernameDd": getattr(userInfoDd, 'username', None),
+        "passwordDd": getattr(userInfoDd, 'password', None),
+        "cookiesDd": getattr(userInfoDd, 'cookies', None),
+    }
+
+    user_info = {k: v for k, v in user_info.items() if v is not None}
+    # print(user_info)
+
+    return jsonify({
+        "status": "success",
+        "message": "查询成功",
+        "userinfo": user_info
+    })
+
+
+@bp.route("/setself", methods=['POST'])
+@login_required
+def setDownloadPathAndUsername():
     user_id = g.user.id
     user: User = User.query.get(user_id)
     downloadPath = request.get_json().get("downloadPath")
+    username = request.get_json().get("username")
+    if not username:
+        return jsonify({
+            "status": "false",
+            "message": "用户名不能为空"
+        })
     if not downloadPath:
         return jsonify({
             "status": "false",
             "message": "下载地址不能为空"
         })
+
+    checkUser = User.query.filter_by(username=username).first()
+    if checkUser and checkUser.id != id:
+        return {
+            'status': 'false',
+            'message': '用户名重复！'
+        }
+
     # 检查路径是否存在
     if check_path(downloadPath):
+        user.username = username
         user.downloadpath = downloadPath
         try:
             db.session.commit()
             return jsonify({
                 "status": "success",
-                "message": "更新默认下载地址成功"
+                "message": "更新数据成功"
             })
         except IntegrityError:
             db.session.rollback()
             return jsonify({
                 "status": "false",
-                "message": "更新默认下载地址失败"
+                "message": "更新数据失败"
             })
     else:
         return jsonify({
@@ -51,7 +95,7 @@ def setDownloadPath():
         })
 
 
-@bp.route("/setUserInfoBaidu", methods=['POST'])
+@bp.route("/setUserInfoBd", methods=['POST'])
 @login_required
 def setUserInfoBaidu():
 
@@ -112,35 +156,8 @@ def setUserInfoBaidu():
         })
 
 
-@bp.route("/getUserInfoBaidu", methods=['GET'])
+@bp.route("/setUserInfoDd", methods=['POST'])
 @login_required
-def getUserInfoBaidu():
-    user_id = g.user.id
-    print(user_id)
-    # user_id = session.get('user_id')
-    userInfo: UserInfoByBaidu = UserInfoByBaidu.query.get(user_id)
-    if userInfo:
-        user_json = {
-            "username": userInfo.username,
-            "password": userInfo.password,
-            "cookie": userInfo.cookies
-        }
-
-        response_json = {
-            "status": "success",
-            "message": "查询成功",
-            "user": user_json
-        }
-
-        return jsonify(response_json)
-    else:
-        response_json = {
-            "status": "success",
-            "message": "查询成功"
-        }
-        return jsonify(response_json)
-
-
 def setUserInfoDouding():
     user_id = g.user.id
     user: User = User.query.get(user_id)
@@ -201,3 +218,60 @@ def setUserInfoDouding():
             "status": "false",
             "message": "添加数据失败"
         })
+
+
+# @bp.route("/getUserInfoBaidu", methods=['GET'])
+# @login_required
+# def getUserInfoBaidu():
+#     user_id = g.user.id
+#     print(user_id)
+#     # user_id = session.get('user_id')
+#     userInfo: UserInfoByBaidu = UserInfoByBaidu.query.get(user_id)
+#     if userInfo:
+#         user_json = {
+#             "username": userInfo.username,
+#             "password": userInfo.password,
+#             "cookies": userInfo.cookies
+#         }
+#
+#         response_json = {
+#             "status": "success",
+#             "message": "查询成功",
+#             "user": user_json
+#         }
+#
+#         return jsonify(response_json)
+#     else:
+#         response_json = {
+#             "status": "success",
+#             "message": "查询成功"
+#         }
+#         return jsonify(response_json)
+#
+#
+# def getUserInfoDouding():
+#     user_id = g.user.id
+#     userInfo: UserInfoDouding = UserInfoDouding.query.get(user_id)
+#
+#     if userInfo:
+#         user_json = {
+#             "username": userInfo.username,
+#             "password": userInfo.password,
+#             "cookies": userInfo.cookies
+#         }
+#
+#         response_json = {
+#             "status": "success",
+#             "message": "查询成功",
+#             "user": user_json
+#         }
+#
+#         return jsonify(response_json)
+#     else:
+#         response_json = {
+#             "status": "success",
+#             "message": "查询成功"
+#         }
+#         return jsonify(response_json)
+#
+

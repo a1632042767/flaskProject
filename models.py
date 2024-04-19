@@ -11,7 +11,7 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True)
     join_time = db.Column(db.DateTime, default=datetime.now)
-    downloadpath = db.Column(db.String(50), default=r"C:\\")
+    downloadpath = db.Column(db.String(50), default=f"C:\\")
 
 
 class EmailCode(db.Model):

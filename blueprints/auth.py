@@ -38,7 +38,8 @@ def login():
 
             user_json = {
                 "id": user.id,
-                "username": user.username
+                "username": user.username,
+                "downloadpath": user.downloadpath
             }
             session['user_id'] = user.id
             response_json = {
