@@ -1,4 +1,5 @@
 import os
+import threading
 from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, g
@@ -15,42 +16,67 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException,
     ElementClickInterceptedException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
 
 from extension import db
 import time
-
 
 # 爬虫下载文库
 
 bp = Blueprint("seleBaidu", __name__, url_prefix="/bd")
 
 
-@bp.route("/search", methods=['GET', ])
-# @login_required
-def getDataByBaidu():
-    searchDoc = request.args.get("searchDoc")
-    searchDoc_encode = quote(searchDoc)
-    path = f'https://wenku.baidu.com/search?word={searchDoc_encode}'
-    print("请求getDate")
-    chrome_options = Options()
-    chrome_options.add_experimental_option("prefs", {
+def start_browser():
+    service = ChromeService(ChromeDriverManager().install())
+    options = Options()
+    options.add_experimental_option("prefs", {
         "page.load.strategy": "eager"
     })
-    chrome_options.add_argument("--disable-images")  # 禁止图片加载
-    chrome_options.add_argument("--disable-javascript")  # 禁止js
-    chrome_options.add_argument("--headless")  # 运行在无头模式
-    chrome_options.add_argument("--disable-gpu")  # 适用于Windows系统
-    driver_chrome = webdriver.Chrome(options=chrome_options)
-    driver_chrome.set_page_load_timeout(5)
+    # chrome_options.add_argument("--disable-images")  # 禁止图片加载
+    # 要让js配合翻页，不能禁止js
+    # chrome_options.add_argument("--disable-javascript")  # 禁止js
+    # chrome_options.add_argument("--headless")  # 运行在无头模式
+    # chrome_options.add_argument("--disable-gpu")  # 适用于Windows系统
+    driver = webdriver.Chrome(options=options, service=service)
+    return driver
+
+
+@bp.route("/search", methods=['GET', ])
+def runInThread():
+    driver = start_browser()
+    for idx in range(5):
+        threading.Thread(target=getDataByBaidu, args=(driver, idx)).start()
+
+    for thread in threading.enumerate():
+        if thread is not threading.current_thread():
+            thread.join()
+
+
+# @bp.route("/search", methods=['GET', ])
+# # @login_required
+def getDataByBaidu(driver: webdriver.Chrome, idx: int):
+    driver.set_page_load_timeout(5)
     print("配置驱动完成")
+    lock = threading.Lock()
+    searchDoc = request.args.get("searchDoc")
+    searchDoc_encode = quote(searchDoc)
+    path = f'https://wenku.baidu.com/search?word={searchDoc_encode}&pn='
+    url_list = [path + str(page) for page in range(1, 6)]
+    print(url_list)
+    print("请求getDate")
 
     docsData = []
     try:
-        driver_chrome.get(path)
+        lock.acquire()
+
+        driver.execute_script(f"window.open('{url_list[idx]}')")
+        driver.switch_to.window(driver.window_handles[idx + 1])
         print("请求网站成功")
         time.sleep(0.5)
-        driver_chrome.refresh()
-        docs = driver_chrome.find_elements(By.CSS_SELECTOR, '.list-item.doc-item-tile.layout-column')
+        driver.refresh()
+
+        docs = driver.find_elements(By.CSS_SELECTOR, '.list-item.doc-item-tile.layout-column')
 
         for doc in docs:
             docData = []
@@ -73,20 +99,24 @@ def getDataByBaidu():
             docData.append(isVip)
 
             docsData.append(docData)
+
+        print("爬取完成")
+        # print(docsData[0][1])
+        driver.quit()
+        return jsonify({
+            "status": "success",
+            "message": "请求成功",
+            "docsData": docsData
+        }), True
+
     except TimeoutException:
         return jsonify({
             "status": "false",
             "message": "访问网站超时"
-        })
+        }), False
 
-    print("爬取完成")
-    # print(docsData[0][1])
-    driver_chrome.quit()
-    return jsonify({
-        "status": "success",
-        "message": "请求成功",
-        "docsData": docsData
-    })
+    finally:
+        lock.release()
 
 
 @bp.route("/loginbd", methods=['POST', ])
@@ -328,4 +358,3 @@ def downloadDocInBaidu():
             "status": "false",
             "message": "网页加载时间过长"
         })
-

@@ -57,7 +57,7 @@ def getDataByDouding():
     }
 
     docsData = []
-    for i in range(0, 5):
+    for i in range(1, 6):
         path = basePath + f'&currentPage={i}'
         print(path)
 
