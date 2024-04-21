@@ -23,9 +23,7 @@ from decorators import login_required
 from models import UserInfoDouding, User
 from extension import db
 
-
 bp = Blueprint("seleDouding", __name__, url_prefix="/dd")
-
 
 findLink = re.compile(r'href="(/p-\d+\.html)"')
 findTitle = re.compile(r'target="_cygj" title="(.*?)"')
@@ -36,15 +34,14 @@ findTitle = re.compile(r'target="_cygj" title="(.*?)"')
 def getDataByDouding():
     searchDoc = request.args.get("searchDoc")
     searchDoc_encode = quote(searchDoc)
-    path = f'https://www.docin.com/search.do?nkey={searchDoc_encode}'
+    basePath = f'https://www.docin.com/search.do?nkey={searchDoc_encode}'
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # 运行在无头模式
     chrome_options.add_argument("--disable-gpu")  # 适用于Windows系统
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(10)
 
-    docsData = []
-    driver.get(path)
+    driver.get(basePath)
     try:
         yanzheng = driver.find_element(By.CLASS_NAME, "dialogTitle")
         return jsonify({
@@ -55,56 +52,63 @@ def getDataByDouding():
         pass
 
     head = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            # "Cookie": cookies,
-        }
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        # "Cookie": cookies,
+    }
 
-    response = requests.get(path, headers=head)
-    html = response.text
-    soup = BeautifulSoup(html, "html.parser")
+    docsData = []
+    for i in range(0, 5):
+        path = basePath + f'&currentPage={i}'
+        print(path)
 
-    try:
-        div_element = soup.find('div', class_='doc-list-style2 doc-mark')
-        for doc in div_element.find_all('dl', class_="clear"):
-            data = []
-            try:
-                pageTotal = doc.find('span', class_="pageno").get_text()
-                if pageTotal:
-                    data.append(pageTotal)
-                content = doc.find('dd', class_="summary").get_text()
-                if content:
-                    data.append(content)
-                # print(doc)
-            except AttributeError:
-                pass
-            doc = str(doc)
-            try:
-                link = re.findall(findLink, doc)[0]
-                if link:
-                    link = f"https://www.docin.com{link}"
-                    data.append(link)
-                title = re.findall(findTitle, doc)[0]
-                if title:
-                    # print(title)
-                    data.append(title)
-            except IndexError:
-                pass
+        response = requests.get(path, headers=head)
+        html = response.text
+        soup = BeautifulSoup(html, "html.parser")
 
-            docsData.append(data)
+        try:
+            div_element = soup.find('div', class_='doc-list-style2 doc-mark')
+            for doc in div_element.find_all('dl', class_="clear"):
+                data = []
+                try:
+                    pageTotal = doc.find('span', class_="pageno").get_text()
+                    if pageTotal:
+                        data.append(pageTotal)
+                    content = doc.find('dd', class_="summary").get_text()
+                    if content:
+                        data.append(content)
+                    # print(doc)
+                except AttributeError:
+                    pass
+                doc = str(doc)
+                try:
+                    link = re.findall(findLink, doc)[0]
+                    if link:
+                        link = f"https://www.docin.com{link}"
+                        data.append(link)
+                    title = re.findall(findTitle, doc)[0]
+                    if title:
+                        # print(title)
+                        data.append(title)
+                except IndexError:
+                    pass
+
+                docsData.append(data)
+
+        except AttributeError:
+            return jsonify({
+                "status": "false",
+                "message": "出现错误"
+            })
 
         # print(docsData)
 
-        return jsonify({
-            "status": "success",
-            "message": "请求成功",
-            "docsData": docsData
-        })
+    return jsonify({
+        "status": "success",
+        "message": "请求成功",
+        "docsData": docsData
+    })
 
-    except AttributeError:
-        return jsonify({
-            "status": "false",
-            "message": "出现错误"
-        })
+
 
 
 @bp.route("/ddwk", methods=['POST', ])
@@ -331,9 +335,3 @@ def loginDouding():
             "status": "false",
             "message": "请先在个人中心处配置豆丁文库账密或cookie"
         })
-
-
-
-
-
-

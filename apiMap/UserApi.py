@@ -134,6 +134,7 @@ class UserApi(MethodView):
                 'message': '用户修改成功'
             }
         except Exception as e:
+            db.session.rollback()
             print(e)
             return {
                 'status': 'false',
